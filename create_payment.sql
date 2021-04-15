@@ -1,7 +1,7 @@
 
 
 -- A persistent table in BLOTTO_MAKE_DB
-CREATE TABLE IF NOT EXISTS `paypal_payment` (
+CREATE TABLE IF NOT EXISTS `stripe_payment` (
   `id` INT (11) NOT NULL AUTO_INCREMENT,
   `txn_ref` varchar(255) CHARACTER SET ascii DEFAULT NULL,
   `client_ref` varchar(255) CHARACTER SET ascii NOT NULL,

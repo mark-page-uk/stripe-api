@@ -1,13 +1,13 @@
 -- Must be a single select query
 SELECT
   `Created`
- ,'{{PAYPAL_PROVIDER}}'
+ ,'{{STRIPE_PROVIDER}}'
  ,null
  ,`TransactionRef`
  ,`ClientRef`
  ,`Amount`
 FROM `pponce_payment`
 WHERE `Created` IS NOT NULL
-  AND `Created`>='{{PAYPAL_FROM}}'
+  AND `Created`>='{{STRIPE_FROM}}'
 ORDER BY `id`
 ;

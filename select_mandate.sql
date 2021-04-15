@@ -1,6 +1,6 @@
 -- Must be a single select query
 SELECT
-  '{{PAYPAL_PROVIDER}}'
+  '{{STRIPE_PROVIDER}}'
  ,null
  ,`TransactionRef`
  ,`ClientRef`
@@ -12,7 +12,7 @@ SELECT
  ,`Amount`
  ,`Chances`
  ,`Name`
- ,'{{PAYPAL_PROVIDER}}'
+ ,'{{STRIPE_PROVIDER}}'
  ,''
  ,''
  ,`id`
@@ -21,7 +21,7 @@ SELECT
  ,`Created`
 FROM `pponce_payment`
 WHERE `Created` IS NOT NULL
-  AND `Created`>='{{PAYPAL_FROM}}'
+  AND `Created`>='{{STRIPE_FROM}}'
 ORDER BY `id`
 ;
 

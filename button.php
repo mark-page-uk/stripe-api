@@ -1,3 +1,3 @@
 
-<!-- Paypal button -->
+<!-- Stripe button if there is such a thing! -->
 

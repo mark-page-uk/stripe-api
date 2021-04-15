@@ -4,16 +4,16 @@ class PayApi {
 
     private  $connection;
     public   $constants = [
-                 'PAYPAL_PROVIDER',
-                 'PAYPAL_TABLE_MANDATE',
-                 'PAYPAL_TABLE_COLLECTION',
-                 'PAYPAL_EMAIL',
-                 'PAYPAL_ERROR_LOG',
-                 'PAYPAL_CNFM_EM',
-                 'PAYPAL_CNFM_PH',
-                 'PAYPAL_CCC',
-                 'PAYPAL_CMPLN_EM',
-                 'PAYPAL_CMPLN_PH'
+                 'STRIPE_PROVIDER',
+                 'STRIPE_TABLE_MANDATE',
+                 'STRIPE_TABLE_COLLECTION',
+                 'STRIPE_EMAIL',
+                 'STRIPE_ERROR_LOG',
+                 'STRIPE_CNFM_EM',
+                 'STRIPE_CNFM_PH',
+                 'STRIPE_CCC',
+                 'STRIPE_CMPLN_EM',
+                 'STRIPE_CMPLN_PH'
              ];
     public   $database;
     public   $diagnostic;
@@ -38,32 +38,32 @@ class PayApi {
 
     public function callback ( ) {
         try {
-            // Do Paypal stuff
+            // Do Stripe stuff
         }
         catch (\Exception $e) {
-            // Say FOOEY back to Paypal
+            // Say FOOEY back to Stripe
         }
         $error = null;
         $step = null;
         try {
-            // Update paypal_payment - `Paid`=NOW(),`Created`=CURDATE()
+            // Update stripe_payment - `Paid`=NOW(),`Created`=CURDATE()
             // Insert a supporter, a player and a contact
-            //     canvas code is PAYPAL_CCC
+            //     canvas code is STRIPE_CCC
             //     canvas_ref is new insert ID
             //     RefNo == canvas_ref + 100000
-            //     Provider = PAYPAL_PROVIDER
-            //     ClientRef = PAYPAL_PROVIDER.Refno
+            //     Provider = STRIPE_PROVIDER
+            //     ClientRef = STRIPE_PROVIDER.Refno
             // Em olrait?
             // Assign tickets by updating blotto_ticket
             try {
-                // Say OK back to Paypal
+                // Say OK back to Stripe
                 // Send confirmation email
-                if (PAYPAL_CMPLN_EM) {
+                if (STRIPE_CMPLN_EM) {
                     $step = 'Confirmation email';
                     $this->campaign_monitor ($supporter_nr,$tickets,$first_draw_close,$draws);
                 }
                 // Send confirmation SMS
-                if (PAYPAL_CMPLN_PH) {
+                if (STRIPE_CMPLN_PH) {
                     $step = 'Confirmation SMS';
                     $sms        = new SMS ();
                     $details    = sms_message ();
@@ -80,8 +80,8 @@ class PayApi {
         }
         error_log ($error);
         mail (
-            PAYPAL_EMAIL_ERROR,
-            'Paypal sign-up callback error',
+            STRIPE_EMAIL_ERROR,
+            'Stripe sign-up callback error',
             $error
         );
     }
@@ -117,7 +117,7 @@ class PayApi {
     private function error_log ($code,$message) {
         $this->errorCode    = $code;
         $this->error        = $message;
-        if (!defined('PAYPAL_ERROR_LOG') || !PAYPAL_ERROR_LOG) {
+        if (!defined('STRIPE_ERROR_LOG') || !STRIPE_ERROR_LOG) {
             return;
         }
         error_log ($code.' '.$message);
@@ -209,9 +209,9 @@ class PayApi {
     }
 
     private function output_collections ( ) {
-        $sql                = "INSERT INTO `".PAYPAL_TABLE_COLLECTION."`\n";
+        $sql                = "INSERT INTO `".STRIPE_TABLE_COLLECTION."`\n";
         $sql               .= file_get_contents (__DIR__.'/select_collection.sql');
-        $sql                = str_replace ('{{PAYPAL_FROM}}',$this->from,$sql);
+        $sql                = str_replace ('{{STRIPE_FROM}}',$this->from,$sql);
         echo $sql;
         try {
             $this->connection->query ($sql);
@@ -230,7 +230,7 @@ class PayApi {
     }
 
     private function output_mandates ( ) {
-        $sql                = "INSERT INTO `".PAYPAL_TABLE_MANDATE."`\n";
+        $sql                = "INSERT INTO `".STRIPE_TABLE_MANDATE."`\n";
         $sql               .= file_get_contents (__DIR__.'/select_mandate.sql');
         echo $sql;
         try {
@@ -276,7 +276,7 @@ class PayApi {
             $error = 'Email address is not valid';
         }
         else {
-            // Insert into paypal_payment leaving especially `Paid` and `Created` as null
+            // Insert into stripe_payment leaving especially `Paid` and `Created` as null
             // $this->txn_ref = something unique to go in button
         }
         if ($error) {
@@ -286,12 +286,12 @@ class PayApi {
     }
 
     private function sms_message ( ) {
-        $mysqli = new mysqli (PAYPAL_DB_HOST,PAYPAL_DB_USERNAME,PAYPAL_DB_PASSWORD,PAYPAL_DB_DATABASE);
+        $mysqli = new mysqli (STRIPE_DB_HOST,STRIPE_DB_USERNAME,STRIPE_DB_PASSWORD,STRIPE_DB_DATABASE);
         if ($mysqli->connect_errno) {
             throw new \Exception ($mysqli->connecterror);
             return false;
         }
-        $project_id = PAYPAL_PROJECT_ID;
+        $project_id = STRIPE_PROJECT_ID;
         $q = "
           SELECT
             `sms_from`
@@ -309,7 +309,7 @@ class PayApi {
             throw new \Exception ('Project ID '.$project_id.' not found');
             return false;
         }
-        $msg = PAYPAL_SMS_MESSAGE;
+        $msg = STRIPE_SMS_MESSAGE;
         $msg = str_replace ('{{NAME}}',$p['sms_name'],$msg);
         $msg = str_replace ('{{PHONE}}',$p['sms_phone'],$msg);
         return array ('from'=>$p['sms_from'],'message'=>$msg);
@@ -317,10 +317,10 @@ class PayApi {
 
     private function verify_email ($email) {
         $params = array(
-            "username" => PAYPAL_D8_USERNAME,
-            "password" => PAYPAL_D8_PASSWORD,
+            "username" => STRIPE_D8_USERNAME,
+            "password" => STRIPE_D8_PASSWORD,
             "email" => $email,
-            "level" => PAYPAL_EMAIL_VERIFY_LEVEL,
+            "level" => STRIPE_EMAIL_VERIFY_LEVEL,
         );
         $client = new SoapClient("https://webservices.data-8.co.uk/EmailValidation.asmx?WSDL");
         $result = $client->IsValid($params);
@@ -329,7 +329,7 @@ class PayApi {
             return false;
         }
         if ($result->IsValidResult->Result=='Invalid') {
-            define ( 'PAYPAL_GO', 'contact');
+            define ( 'STRIPE_GO', 'contact');
             throw new \Exception ("$email is an invalid address");
             return false;
         }
@@ -341,28 +341,28 @@ class PayApi {
             $_POST[$key] = trim($value);
         }
         if (!$_POST['title']) {
-            define ( 'PAYPAL_GO', 'about');
+            define ( 'STRIPE_GO', 'about');
             throw new \Exception ('Title is required');
             return false;
         }
         if (!$_POST['first_name']) {
-            define ( 'PAYPAL_GO', 'about');
+            define ( 'STRIPE_GO', 'about');
             throw new \Exception ('First name is required');
             return false;
         }
         if (!$_POST['last_name']) {
-            define ( 'PAYPAL_GO', 'about');
+            define ( 'STRIPE_GO', 'about');
             throw new \Exception ('Last name is required');
             return false;
         }
         if (!$_POST['dob']) {
-            define ( 'PAYPAL_GO', 'about');
+            define ( 'STRIPE_GO', 'about');
             throw new \Exception ('Date of birth is required');
             return false;
         }
         $dt             = new DateTime ($_POST['dob']);
         if (!$dt) {
-            define ( 'PAYPAL_GO', 'about');
+            define ( 'STRIPE_GO', 'about');
             throw new \Exception ('Date of birth is not valid');
             return false;
         }
@@ -373,47 +373,47 @@ class PayApi {
             return false;
         }
         if (!$_POST['postcode']) {
-            define ( 'PAYPAL_GO', 'address');
+            define ( 'STRIPE_GO', 'address');
             throw new \Exception ('Postcode is required');
             return false;
         }
         if (!$_POST['address_1']) {
-            define ( 'PAYPAL_GO', 'address');
+            define ( 'STRIPE_GO', 'address');
             throw new \Exception ('First line of address is required');
             return false;
         }
         if (!$_POST['town']) {
-            define ( 'PAYPAL_GO', 'address');
+            define ( 'STRIPE_GO', 'address');
             throw new \Exception ('Town/city is required');
             return false;
         }
         if (!$_POST['sort_code']) {
-            define ( 'PAYPAL_GO', 'bank');
+            define ( 'STRIPE_GO', 'bank');
             throw new \Exception ('Bank sort code is required');
             return false;
         }
         if (!$_POST['account_number']) {
-            define ( 'PAYPAL_GO', 'bank');
+            define ( 'STRIPE_GO', 'bank');
             throw new \Exception ('Bank account number is required');
             return false;
         }
         if (!array_key_exists('gdpr',$_POST) || !$_POST['gdpr']) {
-            define ( 'PAYPAL_GO', 'gdpr');
+            define ( 'STRIPE_GO', 'gdpr');
             throw new \Exception ('You must confirm that you have read the GDPR statement');
             return false;
         }
         if (!array_key_exists('signed',$_POST) || !$_POST['signed']) {
-            define ( 'PAYPAL_GO', 'sign');
+            define ( 'STRIPE_GO', 'sign');
             throw new \Exception ('You must confirm your direct debit instruction');
             return false;
         }
         if (!array_key_exists('terms',$_POST) || !$_POST['terms']) {
-            define ( 'PAYPAL_GO', 'sign');
+            define ( 'STRIPE_GO', 'sign');
             throw new \Exception ('You must agree to terms & conditions and the privacy policy');
             return false;
         }
         if (!array_key_exists('age',$_POST) || !$_POST['age']) {
-            define ( 'PAYPAL_GO', 'sign');
+            define ( 'STRIPE_GO', 'sign');
             throw new \Exception ('You must be aged 18 or over to signup');
             return false;
         }
@@ -436,12 +436,12 @@ class PayApi {
             return false;
         }
         if ($result->IsValidResult->Result->ValidationResult=='Invalid') {
-            define ( 'PAYPAL_GO', 'contact');
+            define ( 'STRIPE_GO', 'contact');
             throw new \Exception ("$number is not a valid phone number");
             return false;
         }
         elseif ($type == 'm' && $result->IsValidResult->Result->NumberType!='Mobile') {
-            define ( 'PAYPAL_GO', 'contact');
+            define ( 'STRIPE_GO', 'contact');
             throw new \Exception ("$number is not a valid mobile phone number");
             return false;
         }
